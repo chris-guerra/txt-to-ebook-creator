@@ -91,9 +91,9 @@ The application allows you to add the following metadata to your ebook:
 ### Main Page Layout
 - Title at the top: "Markdown to EPUB Creator"
 - Sidebar for navigation and settings
-- Two-column layout:
-  - Main column: File upload and metadata form
-  - Right column: Cover image and conversion button
+- Two-column layout (equal width):
+  - Left column: Book metadata form
+  - Right column: File upload, cover image, and convert button
 
 ### Content Type Selection
 - Radio buttons for Poetry/Prose selection
@@ -103,9 +103,12 @@ The application allows you to add the following metadata to your ebook:
 ### File Upload Section
 - Drag and drop or click to upload interface
 - Support for .md and .txt files
-- Clear file size limits
+- Clear file size limits (10MB max)
 - Preview of uploaded file name
 - Required field (marked with *)
+- Syntax highlighting for Markdown files
+- Error handling for invalid files
+- Located in right column
 
 ### Metadata Form
 - Clean, organized form layout
@@ -124,6 +127,7 @@ The application allows you to add the following metadata to your ebook:
 - Tag input for keywords
 - Date picker for publication date
 - Language dropdown
+- Located in left column
 
 ### Cover Image Upload
 - Upload button with preview
@@ -131,6 +135,7 @@ The application allows you to add the following metadata to your ebook:
 - Image preview after upload
 - Validation for image dimensions
 - Optional field
+- Located in right column
 
 ### Content Preview
 - Syntax highlighted preview
@@ -138,12 +143,14 @@ The application allows you to add the following metadata to your ebook:
 - Real-time updates
 - Clear section separation
 - Shows after file upload
+- Different display for .md and .txt files
+- Located in right column
 
 ### Action Buttons
 - Convert to EPUB button
 - Clear visual hierarchy
 - Disabled states for unavailable actions
-- Located in right column
+- Located in right column below cover image
 
 ### Status and Feedback
 - Progress bar for conversion
@@ -151,6 +158,7 @@ The application allows you to add the following metadata to your ebook:
 - Error notifications
 - Success confirmations
 - Required field indicators (*)
+- File validation feedback
 
 ### UX Considerations
 1. Progressive Disclosure
@@ -163,13 +171,15 @@ The application allows you to add the following metadata to your ebook:
    - Clear section headings
    - Consistent spacing
    - Visual separation between sections
-   - Two-column layout for better organization
+   - Equal-width two-column layout
+   - Left for information, right for actions
 
 3. Feedback
    - Loading indicators
    - Success/error messages
    - Preview updates in real-time
    - Required field indicators
+   - File validation feedback
 
 4. Accessibility
    - High contrast text
@@ -193,14 +203,17 @@ Implementation progress and next steps:
    - ✅ Create basic styling
    - ✅ Implement two-column layout
    - ✅ Add required field indicators
+   - ✅ Reorganize layout for better UX
+   - ✅ Equal-width column distribution
 
-2. File Upload and Preview
+2. ✅ File Upload and Preview
    - ✅ Implement file upload functionality
    - ✅ Add basic file validation
-   - ⏳ Create preview component with syntax highlighting
-   - ⏳ Add file size validation
-   - ⏳ Add file type validation
-   - ⏳ Implement error handling for invalid files
+   - ✅ Create preview component with syntax highlighting
+   - ✅ Add file size validation
+   - ✅ Add file type validation
+   - ✅ Implement error handling for invalid files
+   - ✅ Add syntax highlighting for Markdown files
 
 3. Metadata Form
    - ✅ Create form layout
@@ -229,17 +242,27 @@ Implementation progress and next steps:
 
 The next immediate steps should be:
 
-1. Enhance File Upload and Preview:
-   - Add syntax highlighting to the preview
-   - Implement proper file validation
-   - Add error handling for invalid files
-   - Add file size limits
-
-2. Improve Metadata Form:
+1. Improve Metadata Form:
    - Add validation for required fields
    - Implement real-time feedback
    - Add field-specific validation rules
    - Handle form state properly
+
+2. Enhance Cover Image Handling:
+   - Add image size validation
+   - Add format validation
+   - Implement image optimization
+   - Add error handling for invalid images
+
+### System Dependencies / Dependencias del Sistema
+
+The application requires some system-level dependencies:
+
+1. libmagic (for file type detection)
+   - On macOS: `brew install libmagic`
+   - Required for proper file type validation
+   - Used by python-magic package
+   - Ensures accurate MIME type detection
 
 Would you like to proceed with either of these areas?
 

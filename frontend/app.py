@@ -92,10 +92,27 @@ def main():
         - Use ### for displayed titles
         """)
 
-    # Main layout: two columns (main and right)
-    main_col, right_col = st.columns([2, 1])
+    # Main layout: two columns (left and right)
+    left_col, right_col = st.columns([1, 1])
 
-    with main_col:
+    with left_col:
+        st.header("Book Metadata")
+        with st.form("metadata_form"):
+            title = st.text_input("Title *", help="Required field")
+            author = st.text_input("Author *", help="Required field")
+            publisher = st.text_input("Publisher")
+            pub_date = st.date_input("Publication Date")
+            isbn = st.text_input("ISBN")
+            language = st.selectbox(
+                "Language",
+                ["English", "Spanish", "French", "German", "Italian"]
+            )
+            description = st.text_area("Description")
+            keywords = st.text_input("Keywords (comma-separated)")
+            # The submit button will be placed in the right column
+            st.form_submit_button("(Hidden)", disabled=True)
+
+    with right_col:
         st.header("Upload Your File")
         uploaded_file = st.file_uploader(
             "Choose a Markdown or TXT file *",
@@ -134,23 +151,6 @@ def main():
             else:
                 st.error(error_message)
 
-        st.header("Book Metadata")
-        with st.form("metadata_form"):
-            title = st.text_input("Title *", help="Required field")
-            author = st.text_input("Author *", help="Required field")
-            publisher = st.text_input("Publisher")
-            pub_date = st.date_input("Publication Date")
-            isbn = st.text_input("ISBN")
-            language = st.selectbox(
-                "Language",
-                ["English", "Spanish", "French", "German", "Italian"]
-            )
-            description = st.text_area("Description")
-            keywords = st.text_input("Keywords (comma-separated)")
-            # The submit button will be placed in the right column
-            st.form_submit_button("(Hidden)", disabled=True)
-
-    with right_col:
         st.header("Cover Image")
         cover_image = st.file_uploader(
             "Upload cover image",
@@ -159,9 +159,10 @@ def main():
         )
         if cover_image:
             st.image(cover_image, caption="Cover Preview")
+        
         st.write("")
         st.write("")
-        # Place the real submit button here
+        # Convert button in right column
         convert_btn = st.button("Convert to EPUB", use_container_width=True)
 
 if __name__ == "__main__":
