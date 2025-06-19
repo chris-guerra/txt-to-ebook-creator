@@ -4,6 +4,8 @@ from pathlib import Path
 import magic
 from typing import Optional, Tuple
 import re
+from PIL import Image
+import io
 
 # Constants
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
@@ -11,6 +13,13 @@ ALLOWED_MIME_TYPES = {
     'text/markdown': '.md',
     'text/plain': '.txt'
 }
+
+# Image validation constants
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_IMAGE_FORMATS = ['JPEG', 'PNG']
+MIN_IMAGE_DIMENSIONS = (800, 1200)  # Minimum width, height
+RECOMMENDED_IMAGE_DIMENSIONS = (1600, 2400)  # Recommended width, height
+MAX_IMAGE_DIMENSIONS = (3000, 4000)  # Maximum width, height
 
 # Page configuration
 st.set_page_config(
@@ -54,6 +63,13 @@ st.markdown("""
         font-size: 0.8em;
         margin-top: 0.2em;
     }
+    .image-info {
+        background-color: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 5px;
+        border: 1px solid #e9ecef;
+        margin-top: 0.5rem;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -75,6 +91,56 @@ def validate_file(file) -> Tuple[bool, Optional[str]]:
         return False, f"Invalid file type. Allowed types: {', '.join(ALLOWED_MIME_TYPES.values())}"
     
     return True, None
+
+def validate_cover_image(image_file) -> Tuple[bool, Optional[str], Optional[dict]]:
+    """Validate cover image for size, format, and dimensions."""
+    if image_file is None:
+        return True, None, None  # Image is optional
+    
+    # Check file size
+    file_size = image_file.getbuffer().nbytes
+    if file_size > MAX_IMAGE_SIZE:
+        return False, f"Image size exceeds {MAX_IMAGE_SIZE/1024/1024}MB limit", None
+    
+    try:
+        # Open image to check format and dimensions
+        image = Image.open(image_file)
+        
+        # Check format
+        if image.format not in ALLOWED_IMAGE_FORMATS:
+            return False, f"Invalid image format. Allowed formats: {', '.join(ALLOWED_IMAGE_FORMATS)}", None
+        
+        # Get dimensions
+        width, height = image.size
+        
+        # Check minimum dimensions
+        if width < MIN_IMAGE_DIMENSIONS[0] or height < MIN_IMAGE_DIMENSIONS[1]:
+            return False, f"Image too small. Minimum dimensions: {MIN_IMAGE_DIMENSIONS[0]}x{MIN_IMAGE_DIMENSIONS[1]} pixels", None
+        
+        # Check maximum dimensions
+        if width > MAX_IMAGE_DIMENSIONS[0] or height > MAX_IMAGE_DIMENSIONS[1]:
+            return False, f"Image too large. Maximum dimensions: {MAX_IMAGE_DIMENSIONS[0]}x{MAX_IMAGE_DIMENSIONS[1]} pixels", None
+        
+        # Check aspect ratio (should be roughly 2:3 for book covers)
+        aspect_ratio = width / height
+        ideal_ratio = 2/3  # 0.667
+        ratio_tolerance = 0.2
+        
+        if abs(aspect_ratio - ideal_ratio) > ratio_tolerance:
+            st.warning(f"⚠️ Image aspect ratio ({aspect_ratio:.2f}) differs from ideal book cover ratio (0.67). Recommended: 2:3 ratio.")
+        
+        image_info = {
+            'format': image.format,
+            'width': width,
+            'height': height,
+            'size_mb': file_size / (1024 * 1024),
+            'aspect_ratio': aspect_ratio
+        }
+        
+        return True, None, image_info
+        
+    except Exception as e:
+        return False, f"Error processing image: {str(e)}", None
 
 def validate_title(title: str) -> Tuple[bool, Optional[str]]:
     """Validate book title."""
@@ -246,10 +312,38 @@ def main():
         cover_image = st.file_uploader(
             "Upload cover image",
             type=['jpg', 'jpeg', 'png'],
-            help="Recommended size: 1600x2400 pixels"
+            help=f"Optional: JPG/PNG, max {MAX_IMAGE_SIZE/1024/1024}MB, min {MIN_IMAGE_DIMENSIONS[0]}x{MIN_IMAGE_DIMENSIONS[1]}px"
         )
+        
         if cover_image:
-            st.image(cover_image, caption="Cover Preview")
+            # Validate cover image
+            is_valid, error_message, image_info = validate_cover_image(cover_image)
+            
+            if is_valid:
+                st.success("✅ Cover image is valid!")
+                st.image(cover_image, caption="Cover Preview")
+                
+                # Display image information
+                if image_info:
+                    st.markdown(f"""
+                    <div class="image-info">
+                        <strong>Image Details:</strong><br>
+                        Format: {image_info['format']}<br>
+                        Dimensions: {image_info['width']} x {image_info['height']} pixels<br>
+                        Size: {image_info['size_mb']:.2f} MB<br>
+                        Aspect Ratio: {image_info['aspect_ratio']:.2f}
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Check if dimensions match recommended size
+                    if (image_info['width'] == RECOMMENDED_IMAGE_DIMENSIONS[0] and 
+                        image_info['height'] == RECOMMENDED_IMAGE_DIMENSIONS[1]):
+                        st.success("✅ Perfect! Image dimensions match recommended size (1600x2400).")
+                    else:
+                        st.info(f"💡 Recommended dimensions: {RECOMMENDED_IMAGE_DIMENSIONS[0]}x{RECOMMENDED_IMAGE_DIMENSIONS[1]} pixels")
+            else:
+                st.error(f"❌ {error_message}")
+                st.image(cover_image, caption="Cover Preview (Invalid)")
         
         st.write("")
         st.write("")

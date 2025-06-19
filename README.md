@@ -228,13 +228,16 @@ Implementation progress and next steps:
      - ISBN (optional, 10 or 13 digits)
      - Description (optional, max 1000 characters)
 
-4. Cover Image Upload
+4. ✅ Cover Image Upload
    - ✅ Implement image upload
    - ✅ Add basic preview
-   - ⏳ Add image validation
-   - ⏳ Add image size validation
-   - ⏳ Add image format validation
-   - ⏳ Implement image optimization
+   - ✅ Add image validation
+   - ✅ Add image size validation
+   - ✅ Add image format validation
+   - ✅ Add dimension validation
+   - ✅ Add aspect ratio checking
+   - ✅ Display detailed image information
+   - ✅ Provide recommendations for optimal dimensions
 
 5. Conversion and Download
    - ⏳ Implement conversion process
@@ -247,17 +250,17 @@ Implementation progress and next steps:
 
 The next immediate steps should be:
 
-1. Enhance Cover Image Handling:
-   - Add image size validation
-   - Add format validation
-   - Implement image optimization
-   - Add error handling for invalid images
-
-2. Implement Conversion Process:
+1. Implement Conversion Process:
    - Connect to backend API
    - Add progress indicators
    - Handle conversion errors
    - Implement download functionality
+
+2. Backend Development:
+   - Set up FastAPI application
+   - Implement Markdown to EPUB conversion
+   - Create API endpoints
+   - Handle file processing
 
 ### System Dependencies / Dependencias del Sistema
 
@@ -295,6 +298,16 @@ The application implements the following validation rules:
    - Optional field
    - Maximum 1000 characters
    - Allows empty values
+
+5. **Cover Image Validation:**
+   - Optional field
+   - Maximum file size: 5MB
+   - Supported formats: JPEG, PNG
+   - Minimum dimensions: 800x1200 pixels
+   - Maximum dimensions: 3000x4000 pixels
+   - Recommended dimensions: 1600x2400 pixels
+   - Aspect ratio warning for non-2:3 ratios
+   - Detailed image information display
 
 Would you like to proceed with either of these areas?
 
