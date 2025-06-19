@@ -6,6 +6,8 @@ from typing import Optional, Tuple
 import re
 from PIL import Image
 import io
+import time
+import base64
 
 # Constants
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
@@ -63,12 +65,19 @@ st.markdown("""
         font-size: 0.8em;
         margin-top: 0.2em;
     }
-    .image-info {
+    .file-info {
         background-color: #f8f9fa;
         padding: 0.5rem;
         border-radius: 5px;
         border: 1px solid #e9ecef;
         margin-top: 0.5rem;
+    }
+    .conversion-status {
+        background-color: #e8f5e8;
+        padding: 1rem;
+        border-radius: 5px;
+        border: 1px solid #4caf50;
+        margin: 1rem 0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -194,6 +203,38 @@ def validate_description(description: str) -> Tuple[bool, Optional[str]]:
     
     return True, None
 
+def simulate_conversion_process():
+    """Simulate the conversion process with progress updates."""
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    steps = [
+        "Validating input files...",
+        "Processing metadata...",
+        "Converting Markdown to HTML...",
+        "Generating EPUB structure...",
+        "Adding cover image...",
+        "Finalizing EPUB file...",
+        "Conversion complete!"
+    ]
+    
+    for i, step in enumerate(steps):
+        status_text.text(step)
+        progress = (i + 1) / len(steps)
+        progress_bar.progress(progress)
+        time.sleep(0.5)  # Simulate processing time
+    
+    progress_bar.empty()
+    status_text.empty()
+    
+    return True
+
+def create_download_link(data, filename, text):
+    """Create a download link for the generated file."""
+    b64 = base64.b64encode(data).decode()
+    href = f'<a href="data:application/epub+zip;base64,{b64}" download="{filename}">{text}</a>'
+    return href
+
 def main():
     # Title
     st.title("📚 Markdown to EPUB Creator")
@@ -282,31 +323,11 @@ def main():
             is_valid, error_message = validate_file(uploaded_file)
             
             if is_valid:
-                st.success(f"File uploaded: {uploaded_file.name}")
-                
-                # Preview section with syntax highlighting
-                st.header("Content Preview")
-                content = uploaded_file.getvalue().decode()
-                
-                # Add syntax highlighting for markdown
-                if uploaded_file.name.endswith('.md'):
-                    st.markdown("""
-                    <style>
-                    .markdown-preview {
-                        background-color: #f8f9fa;
-                        padding: 1rem;
-                        border-radius: 5px;
-                        border: 1px solid #e9ecef;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-                    st.markdown('<div class="markdown-preview">', unsafe_allow_html=True)
-                    st.markdown(content)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                else:
-                    st.text_area("Content", content, height=400)
+                st.success(f"✅ File uploaded successfully: {uploaded_file.name}")
+                file_size = uploaded_file.getbuffer().nbytes / (1024 * 1024)
+                st.info(f"📄 File size: {file_size:.2f} MB")
             else:
-                st.error(error_message)
+                st.error(f"❌ {error_message}")
 
         st.header("Cover Image")
         cover_image = st.file_uploader(
@@ -320,35 +341,60 @@ def main():
             is_valid, error_message, image_info = validate_cover_image(cover_image)
             
             if is_valid:
-                st.success("✅ Cover image is valid!")
-                st.image(cover_image, caption="Cover Preview")
-                
-                # Display image information
+                st.success(f"✅ Cover image uploaded successfully: {cover_image.name}")
                 if image_info:
-                    st.markdown(f"""
-                    <div class="image-info">
-                        <strong>Image Details:</strong><br>
-                        Format: {image_info['format']}<br>
-                        Dimensions: {image_info['width']} x {image_info['height']} pixels<br>
-                        Size: {image_info['size_mb']:.2f} MB<br>
-                        Aspect Ratio: {image_info['aspect_ratio']:.2f}
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Check if dimensions match recommended size
-                    if (image_info['width'] == RECOMMENDED_IMAGE_DIMENSIONS[0] and 
-                        image_info['height'] == RECOMMENDED_IMAGE_DIMENSIONS[1]):
-                        st.success("✅ Perfect! Image dimensions match recommended size (1600x2400).")
-                    else:
-                        st.info(f"💡 Recommended dimensions: {RECOMMENDED_IMAGE_DIMENSIONS[0]}x{RECOMMENDED_IMAGE_DIMENSIONS[1]} pixels")
+                    st.info(f"📷 {image_info['format']} - {image_info['width']}x{image_info['height']}px - {image_info['size_mb']:.2f}MB")
             else:
                 st.error(f"❌ {error_message}")
-                st.image(cover_image, caption="Cover Preview (Invalid)")
         
         st.write("")
         st.write("")
-        # Convert button in right column
-        convert_btn = st.button("Convert to EPUB", use_container_width=True)
+        
+        # Conversion section
+        st.header("Convert to EPUB")
+        
+        # Check if all required fields are ready
+        file_ready = uploaded_file is not None and validate_file(uploaded_file)[0]
+        metadata_ready = st.session_state.get('form_submitted', False)
+        
+        # Initialize session state for conversion attempts
+        if 'conversion_attempted' not in st.session_state:
+            st.session_state.conversion_attempted = False
+        
+        if file_ready and metadata_ready:
+            convert_btn = st.button("🚀 Start Conversion", use_container_width=True)
+            
+            if convert_btn:
+                # Start conversion process
+                st.markdown('<div class="conversion-status">', unsafe_allow_html=True)
+                st.success("🔄 Starting conversion process...")
+                
+                # Simulate conversion process
+                if simulate_conversion_process():
+                    st.success("✅ Conversion completed successfully!")
+                    
+                    # Create a sample EPUB file (in real implementation, this would be the actual converted file)
+                    sample_epub_content = b"Sample EPUB content"  # This would be the actual EPUB file
+                    filename = f"{title.replace(' ', '_') if title else 'book'}.epub"
+                    
+                    # Create download link
+                    download_link = create_download_link(sample_epub_content, filename, "📥 Download EPUB")
+                    st.markdown(download_link, unsafe_allow_html=True)
+                    
+                    st.info(f"📚 Your EPUB file '{filename}' is ready for download!")
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            # Show warnings only when user tries to convert without meeting requirements
+            if st.button("🚀 Start Conversion", use_container_width=True, disabled=True):
+                st.session_state.conversion_attempted = True
+            
+            # Show warnings only after conversion attempt
+            if st.session_state.conversion_attempted:
+                if not file_ready:
+                    st.error("❌ Please upload a valid file first.")
+                if not metadata_ready:
+                    st.error("❌ Please validate your metadata form first.")
 
 if __name__ == "__main__":
     main()
