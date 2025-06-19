@@ -274,23 +274,31 @@ Implementation progress and next steps:
    - ✅ Configure CORS for frontend integration
    - ✅ Add error handling and health checks
 
+7. ✅ API Endpoints
+   - ✅ Create file upload endpoint
+   - ✅ Create conversion endpoint
+   - ✅ Create status checking endpoint
+   - ✅ Create download endpoint
+   - ✅ Add proper request/response handling
+   - ✅ Implement chapter structure parsing
+   - ✅ Add background task processing
+
 ### Current Focus / Enfoque Actual
 
-**Phase 3: API Endpoints and Integration** - The backend structure is complete, now we need to create the API endpoints and connect everything:
+**Phase 4: Frontend Integration** - The backend API is complete, now we need to connect the frontend:
 
-1. **API Endpoints (Priority 1):**
-   - Create file upload endpoint
-   - Create conversion endpoint
-   - Create status checking endpoint
-   - Create download endpoint
-   - Add proper request/response handling
-
-2. **Frontend Integration (Priority 2):**
+1. **Frontend Integration (Priority 1):**
    - Update frontend to call backend API
    - Replace simulation with real conversion
    - Implement actual file upload to backend
    - Add error handling for API calls
    - Test end-to-end functionality
+
+2. **Testing and Optimization (Priority 2):**
+   - End-to-end testing
+   - Error handling validation
+   - Performance optimization
+   - File cleanup verification
 
 3. **Advanced Features (Priority 3):**
    - Add EPUB validation
@@ -300,7 +308,7 @@ Implementation progress and next steps:
 
 ### Backend Implementation Details / Detalles de Implementación del Backend
 
-✅ **COMPLETED** - The FastAPI backend structure is fully implemented:
+✅ **COMPLETED** - The FastAPI backend is fully implemented with complete API:
 
 #### Backend Architecture / Arquitectura del Backend
 ```
@@ -310,49 +318,150 @@ backend/
 │   ├── models/
 │   │   └── book.py          # Pydantic data models
 │   ├── converters/
-│   │   └── markdown_to_epub.py  # Conversion logic
+│   │   └── markdown_to_epub.py  # Conversion logic with chapter parsing
+│   ├── routers/
+│   │   └── conversion.py    # API endpoints
 │   └── utils/
 │       └── helpers.py       # Utility functions
 ```
+
+#### API Endpoints / Endpoints de la API
+
+**Base URL**: `http://localhost:8000`
+
+##### Health Check
+- `GET /` - Root health check
+- `GET /health` - Service health status
+
+##### File Upload
+- `POST /api/v1/conversion/upload`
+  - **Purpose**: Upload Markdown/TXT file and optional cover image
+  - **Parameters**:
+    - `file` (required): Markdown or TXT file
+    - `cover_image` (optional): Cover image (JPG/PNG)
+  - **Response**: File information and validation status
+  - **Example**:
+    ```bash
+    curl -X POST "http://localhost:8000/api/v1/conversion/upload" \
+         -F "file=@book.md" \
+         -F "cover_image=@cover.jpg"
+    ```
+
+##### Conversion
+- `POST /api/v1/conversion/convert`
+  - **Purpose**: Convert uploaded file to EPUB format
+  - **Parameters**:
+    - `file_id` (required): Unique identifier from upload
+    - `metadata_json` (required): JSON string with book metadata
+    - `content_type` (optional): "prose" or "poetry" (default: "prose")
+  - **Response**: Conversion status and download URL
+  - **Example**:
+    ```bash
+    curl -X POST "http://localhost:8000/api/v1/conversion/convert" \
+         -F "file_id=123e4567-e89b-12d3-a456-426614174000" \
+         -F "metadata_json={\"title\":\"My Book\",\"author\":\"John Doe\"}" \
+         -F "content_type=prose"
+    ```
+
+##### Status Check
+- `GET /api/v1/conversion/status/{file_id}`
+  - **Purpose**: Check conversion status
+  - **Parameters**: `file_id` in URL path
+  - **Response**: Current conversion status and progress
+  - **Example**:
+    ```bash
+    curl "http://localhost:8000/api/v1/conversion/status/123e4567-e89b-12d3-a456-426614174000"
+    ```
+
+##### Download
+- `GET /api/v1/conversion/download/{file_id}`
+  - **Purpose**: Download converted EPUB file
+  - **Parameters**: `file_id` in URL path
+  - **Response**: EPUB file for download
+  - **Example**:
+    ```bash
+    curl -O "http://localhost:8000/api/v1/conversion/download/123e4567-e89b-12d3-a456-426614174000"
+    ```
+
+##### File Management
+- `DELETE /api/v1/conversion/files/{file_id}`
+  - **Purpose**: Delete uploaded and converted files
+  - **Parameters**: `file_id` in URL path
+  - **Response**: Deletion status
+  - **Example**:
+    ```bash
+    curl -X DELETE "http://localhost:8000/api/v1/conversion/files/123e4567-e89b-12d3-a456-426614174000"
+    ```
+
+#### Chapter Structure Handling / Manejo de Estructura de Capítulos
+
+✅ **IMPLEMENTED** - The conversion system now properly handles the Markdown chapter structure:
+
+**How it works**:
+1. **Parsing**: The system parses Markdown content looking for `## Chapter` headings
+2. **Chapter Creation**: Each `## Chapter` becomes a separate EPUB chapter
+3. **Content Organization**: Content between chapters is properly organized
+4. **Table of Contents**: Automatic TOC generation with chapter titles
+5. **Fallback**: If no chapters found, entire content becomes one chapter
+
+**Example Markdown Structure**:
+```markdown
+# My Book Title
+## Chapter 1
+### Section 1.1
+Content here...
+
+## Chapter 2
+### Section 2.1
+More content...
+```
+
+**Result**: Creates EPUB with separate chapters for "Chapter 1" and "Chapter 2", each with their own content and proper navigation.
 
 #### Implemented Features / Características Implementadas
 - ✅ FastAPI application with CORS configuration
 - ✅ Pydantic models for data validation
 - ✅ File upload and validation utilities
 - ✅ Image processing and validation
-- ✅ Markdown to EPUB conversion logic
+- ✅ Markdown to EPUB conversion with chapter parsing
 - ✅ Error handling and health checks
 - ✅ File management and cleanup
+- ✅ Background task processing
+- ✅ Complete API with all endpoints
+- ✅ Chapter structure parsing and EPUB generation
 
 #### Technical Components / Componentes Técnicos
-- ✅ **FastAPI**: Modern, fast web framework
+- ✅ **FastAPI**: Modern, fast web framework with automatic API documentation
 - ✅ **Pydantic**: Data validation and serialization
-- ✅ **ebooklib**: EPUB file generation
-- ✅ **python-magic**: File type detection
-- ✅ **Pillow**: Image processing
-- ✅ **markdown**: Markdown to HTML conversion
+- ✅ **ebooklib**: EPUB file generation and manipulation
+- ✅ **python-magic**: Reliable file type detection
+- ✅ **Pillow**: Image processing and validation
+- ✅ **markdown**: Markdown to HTML conversion with extensions
+- ✅ **Regex**: Chapter structure parsing
+- ✅ **Background Tasks**: Asynchronous file processing
 
 ### Recommended Next Steps / Próximos Pasos Recomendados
 
-1. **Create API Endpoints:**
+1. **Update Frontend Integration:**
    ```bash
-   cd backend
-   # Create routers for different endpoints
-   # Implement file upload API
-   # Implement conversion API
+   cd frontend
+   # Update app.py to call backend API
+   # Replace simulation with real API calls
+   # Test complete workflow
    ```
 
-2. **Then Frontend Integration:**
-   - Update frontend to call backend API
-   - Replace simulation with real conversion
-   - Test complete workflow
-
-3. **Finally Testing:**
-   - End-to-end testing
+2. **Then Testing:**
+   - End-to-end testing with real files
    - Error handling validation
-   - Performance optimization
+   - Performance testing
+   - File cleanup verification
 
-Would you like to proceed with creating the API endpoints?
+3. **Finally Deployment:**
+   - Docker containerization
+   - Production deployment
+   - Monitoring and logging
+
+Would you like to proceed with updating the frontend to integrate with the backend API?
 
 ## Setup / Configuración
 

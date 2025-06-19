@@ -1,7 +1,8 @@
 import os
 import uuid
+import re
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Tuple
 from fastapi import HTTPException
 from ebooklib import epub
 import markdown
@@ -39,11 +40,11 @@ class MarkdownToEPUBConverter:
             with open(markdown_file_path, 'r', encoding='utf-8') as f:
                 markdown_content = f.read()
             
-            # Convert markdown to HTML
-            html_content = self._markdown_to_html(markdown_content)
+            # Parse markdown into chapters
+            chapters = self._parse_markdown_chapters(markdown_content)
             
             # Create EPUB book
-            book = self._create_epub_book(metadata, html_content, cover_image_path)
+            book = self._create_epub_book(metadata, chapters, cover_image_path)
             
             # Generate output filename
             if not output_filename:
@@ -62,6 +63,46 @@ class MarkdownToEPUBConverter:
                 status_code=500, 
                 detail=f"Error converting to EPUB: {str(e)}"
             )
+    
+    def _parse_markdown_chapters(self, markdown_content: str) -> List[Tuple[str, str]]:
+        """
+        Parse Markdown content into chapters based on ## headings.
+        
+        Args:
+            markdown_content: Raw markdown content
+            
+        Returns:
+            List of (chapter_title, chapter_content) tuples
+        """
+        # Split content by ## headings (chapters)
+        chapter_pattern = r'^##\s+(.+)$'
+        chapter_matches = list(re.finditer(chapter_pattern, markdown_content, re.MULTILINE))
+        
+        chapters = []
+        
+        if not chapter_matches:
+            # No chapters found, treat entire content as one chapter
+            html_content = self._markdown_to_html(markdown_content)
+            chapters.append(("Content", html_content))
+        else:
+            # Process each chapter
+            for i, match in enumerate(chapter_matches):
+                chapter_title = match.group(1).strip()
+                
+                # Get chapter content
+                start_pos = match.end()
+                if i + 1 < len(chapter_matches):
+                    end_pos = chapter_matches[i + 1].start()
+                else:
+                    end_pos = len(markdown_content)
+                
+                chapter_content = markdown_content[start_pos:end_pos].strip()
+                
+                # Convert chapter content to HTML
+                html_content = self._markdown_to_html(chapter_content)
+                chapters.append((chapter_title, html_content))
+        
+        return chapters
     
     def _markdown_to_html(self, markdown_content: str) -> str:
         """Convert Markdown content to HTML."""
@@ -95,10 +136,10 @@ class MarkdownToEPUBConverter:
     def _create_epub_book(
         self, 
         metadata: BookMetadata, 
-        html_content: str, 
+        chapters: List[Tuple[str, str]], 
         cover_image_path: Optional[str] = None
     ) -> epub.EpubBook:
-        """Create EPUB book with metadata and content."""
+        """Create EPUB book with metadata and chapters."""
         # Create EPUB book
         book = epub.EpubBook()
         
@@ -131,23 +172,37 @@ class MarkdownToEPUBConverter:
             except Exception as e:
                 print(f"Warning: Could not add cover image: {e}")
         
-        # Create chapter
-        chapter = epub.EpubHtml(
-            title=metadata.title,
-            file_name='chapter.xhtml',
-            content=html_content
-        )
-        book.add_item(chapter)
+        # Create chapters
+        epub_chapters = []
+        toc_items = []
         
-        # Create table of contents
-        book.toc = [epub.Link('chapter.xhtml', metadata.title, 'chapter')]
+        for i, (chapter_title, chapter_content) in enumerate(chapters):
+            # Create safe filename
+            safe_title = "".join(c for c in chapter_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            safe_title = safe_title.replace(' ', '_').lower()
+            filename = f"chapter_{i+1}_{safe_title}.xhtml"
+            
+            # Create EPUB chapter
+            chapter = epub.EpubHtml(
+                title=chapter_title,
+                file_name=filename,
+                content=chapter_content
+            )
+            book.add_item(chapter)
+            epub_chapters.append(chapter)
+            
+            # Add to table of contents
+            toc_items.append(epub.Link(filename, chapter_title, f"chapter_{i+1}"))
+        
+        # Set table of contents
+        book.toc = toc_items
         
         # Add default NCX and Nav files
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
         
-        # Define spine
-        book.spine = ['nav', chapter]
+        # Define spine (navigation + all chapters)
+        book.spine = ['nav'] + epub_chapters
         
         return book
     

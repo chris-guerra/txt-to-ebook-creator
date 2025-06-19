@@ -5,8 +5,8 @@ import uvicorn
 from pathlib import Path
 import os
 
-# Import routers (will be created next)
-# from app.routers import conversion, files, metadata
+# Import routers
+from app.routers import conversion
 
 # Create FastAPI app instance
 app = FastAPI(
@@ -54,10 +54,8 @@ async def general_exception_handler(request, exc):
         content={"error": "Internal server error", "detail": str(exc)}
     )
 
-# Include routers (will be added as we create them)
-# app.include_router(conversion.router, prefix="/api/v1/conversion", tags=["conversion"])
-# app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
-# app.include_router(metadata.router, prefix="/api/v1/metadata", tags=["metadata"])
+# Include routers
+app.include_router(conversion.router, prefix="/api/v1/conversion", tags=["conversion"])
 
 if __name__ == "__main__":
     uvicorn.run(
