@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import magic
 from typing import Optional, Tuple
+import re
 
 # Constants
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
@@ -48,6 +49,11 @@ st.markdown("""
         font-size: 0.8em;
         margin-top: 0.2em;
     }
+    .warning-message {
+        color: #ffa500;
+        font-size: 0.8em;
+        margin-top: 0.2em;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -67,6 +73,58 @@ def validate_file(file) -> Tuple[bool, Optional[str]]:
     
     if file_type not in ALLOWED_MIME_TYPES:
         return False, f"Invalid file type. Allowed types: {', '.join(ALLOWED_MIME_TYPES.values())}"
+    
+    return True, None
+
+def validate_title(title: str) -> Tuple[bool, Optional[str]]:
+    """Validate book title."""
+    if not title or not title.strip():
+        return False, "Title is required"
+    if len(title.strip()) < 2:
+        return False, "Title must be at least 2 characters long"
+    if len(title.strip()) > 200:
+        return False, "Title must be less than 200 characters"
+    return True, None
+
+def validate_author(author: str) -> Tuple[bool, Optional[str]]:
+    """Validate author name."""
+    if not author or not author.strip():
+        return False, "Author is required"
+    if len(author.strip()) < 2:
+        return False, "Author name must be at least 2 characters long"
+    if len(author.strip()) > 100:
+        return False, "Author name must be less than 100 characters"
+    return True, None
+
+def validate_isbn(isbn: str) -> Tuple[bool, Optional[str]]:
+    """Validate ISBN format."""
+    if not isbn:
+        return True, None  # ISBN is optional
+    
+    # Remove hyphens and spaces
+    isbn_clean = re.sub(r'[-\s]', '', isbn)
+    
+    # Check length (ISBN-10 or ISBN-13)
+    if len(isbn_clean) not in [10, 13]:
+        return False, "ISBN must be 10 or 13 digits"
+    
+    # Check if all characters are digits (except last character for ISBN-10)
+    if not isbn_clean[:-1].isdigit():
+        return False, "ISBN must contain only digits (except last character for ISBN-10)"
+    
+    # For ISBN-10, last character can be 'X'
+    if len(isbn_clean) == 10 and not (isbn_clean[-1].isdigit() or isbn_clean[-1].upper() == 'X'):
+        return False, "ISBN-10 last character must be a digit or 'X'"
+    
+    return True, None
+
+def validate_description(description: str) -> Tuple[bool, Optional[str]]:
+    """Validate description."""
+    if not description:
+        return True, None  # Description is optional
+    
+    if len(description.strip()) > 1000:
+        return False, "Description must be less than 1000 characters"
     
     return True, None
 
@@ -97,20 +155,53 @@ def main():
 
     with left_col:
         st.header("Book Metadata")
+        
+        # Initialize session state for form validation
+        if 'form_submitted' not in st.session_state:
+            st.session_state.form_submitted = False
+        
         with st.form("metadata_form"):
-            title = st.text_input("Title *", help="Required field")
-            author = st.text_input("Author *", help="Required field")
-            publisher = st.text_input("Publisher")
+            title = st.text_input("Title *", help="Required field (2-200 characters)")
+            author = st.text_input("Author *", help="Required field (2-100 characters)")
+            publisher = st.text_input("Publisher", help="Optional field")
             pub_date = st.date_input("Publication Date")
-            isbn = st.text_input("ISBN")
+            isbn = st.text_input("ISBN", help="Optional: 10 or 13 digits")
             language = st.selectbox(
                 "Language",
                 ["English", "Spanish", "French", "German", "Italian"]
             )
-            description = st.text_area("Description")
-            keywords = st.text_input("Keywords (comma-separated)")
-            # The submit button will be placed in the right column
-            st.form_submit_button("(Hidden)", disabled=True)
+            description = st.text_area("Description", help="Optional field (max 1000 characters)")
+            keywords = st.text_input("Keywords (comma-separated)", help="Optional field")
+            
+            # Form submission
+            submitted = st.form_submit_button("Validate Form")
+            
+            if submitted:
+                st.session_state.form_submitted = True
+                
+                # Validate all fields
+                title_valid, title_error = validate_title(title)
+                author_valid, author_error = validate_author(author)
+                isbn_valid, isbn_error = validate_isbn(isbn)
+                desc_valid, desc_error = validate_description(description)
+                
+                # Display validation results
+                if not title_valid:
+                    st.error(f"Title: {title_error}")
+                if not author_valid:
+                    st.error(f"Author: {author_error}")
+                if not isbn_valid:
+                    st.error(f"ISBN: {isbn_error}")
+                if not desc_valid:
+                    st.error(f"Description: {desc_error}")
+                
+                # Check if all required fields are valid
+                if title_valid and author_valid:
+                    st.success("✅ All required fields are valid!")
+                    if isbn_valid and desc_valid:
+                        st.success("✅ All optional fields are valid!")
+                else:
+                    st.warning("⚠️ Please fix the errors above before proceeding.")
 
     with right_col:
         st.header("Upload Your File")

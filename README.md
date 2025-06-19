@@ -215,13 +215,18 @@ Implementation progress and next steps:
    - ✅ Implement error handling for invalid files
    - ✅ Add syntax highlighting for Markdown files
 
-3. Metadata Form
+3. ✅ Metadata Form
    - ✅ Create form layout
    - ✅ Add required field indicators
-   - ⏳ Implement input validation
-   - ⏳ Add real-time feedback
-   - ⏳ Add field-specific validation rules
-   - ⏳ Implement form state management
+   - ✅ Implement input validation
+   - ✅ Add real-time feedback
+   - ✅ Add field-specific validation rules
+   - ✅ Implement form state management
+   - ✅ Add validation for:
+     - Title (required, 2-200 characters)
+     - Author (required, 2-100 characters)
+     - ISBN (optional, 10 or 13 digits)
+     - Description (optional, max 1000 characters)
 
 4. Cover Image Upload
    - ✅ Implement image upload
@@ -242,17 +247,17 @@ Implementation progress and next steps:
 
 The next immediate steps should be:
 
-1. Improve Metadata Form:
-   - Add validation for required fields
-   - Implement real-time feedback
-   - Add field-specific validation rules
-   - Handle form state properly
-
-2. Enhance Cover Image Handling:
+1. Enhance Cover Image Handling:
    - Add image size validation
    - Add format validation
    - Implement image optimization
    - Add error handling for invalid images
+
+2. Implement Conversion Process:
+   - Connect to backend API
+   - Add progress indicators
+   - Handle conversion errors
+   - Implement download functionality
 
 ### System Dependencies / Dependencias del Sistema
 
@@ -263,6 +268,33 @@ The application requires some system-level dependencies:
    - Required for proper file type validation
    - Used by python-magic package
    - Ensures accurate MIME type detection
+
+### Validation Rules / Reglas de Validación
+
+The application implements the following validation rules:
+
+1. **Title Validation:**
+   - Required field
+   - Minimum 2 characters
+   - Maximum 200 characters
+   - Cannot be empty or whitespace only
+
+2. **Author Validation:**
+   - Required field
+   - Minimum 2 characters
+   - Maximum 100 characters
+   - Cannot be empty or whitespace only
+
+3. **ISBN Validation:**
+   - Optional field
+   - Must be 10 or 13 digits
+   - Supports ISBN-10 with 'X' as last character
+   - Removes hyphens and spaces automatically
+
+4. **Description Validation:**
+   - Optional field
+   - Maximum 1000 characters
+   - Allows empty values
 
 Would you like to proceed with either of these areas?
 
