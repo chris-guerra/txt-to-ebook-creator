@@ -8,6 +8,12 @@ from PIL import Image
 import io
 import time
 import base64
+import requests
+import json
+from datetime import date
+
+# API Configuration
+API_BASE_URL = "http://localhost:8000"
 
 # Constants
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
@@ -203,31 +209,77 @@ def validate_description(description: str) -> Tuple[bool, Optional[str]]:
     
     return True, None
 
-def simulate_conversion_process():
-    """Simulate the conversion process with progress updates."""
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    steps = [
-        "Validating input files...",
-        "Processing metadata...",
-        "Converting Markdown to HTML...",
-        "Generating EPUB structure...",
-        "Adding cover image...",
-        "Finalizing EPUB file...",
-        "Conversion complete!"
-    ]
-    
-    for i, step in enumerate(steps):
-        status_text.text(step)
-        progress = (i + 1) / len(steps)
-        progress_bar.progress(progress)
-        time.sleep(0.5)  # Simulate processing time
-    
-    progress_bar.empty()
-    status_text.empty()
-    
-    return True
+def upload_file_to_api(file, cover_image=None):
+    """Upload file to backend API."""
+    try:
+        files = {'file': (file.name, file.getvalue(), 'text/markdown')}
+        
+        if cover_image:
+            files['cover_image'] = (cover_image.name, cover_image.getvalue(), 'image/jpeg')
+        
+        response = requests.post(f"{API_BASE_URL}/api/v1/conversion/upload", files=files)
+        
+        if response.status_code == 200:
+            return True, response.json(), None
+        else:
+            return False, None, f"Upload failed: {response.text}"
+            
+    except requests.exceptions.ConnectionError:
+        return False, None, "Could not connect to backend server. Make sure it's running on http://localhost:8000"
+    except Exception as e:
+        return False, None, f"Upload error: {str(e)}"
+
+def convert_file_to_epub(file_id, metadata, content_type="prose"):
+    """Convert file to EPUB using backend API."""
+    try:
+        # Prepare metadata for API
+        metadata_dict = {
+            "title": metadata["title"],
+            "author": metadata["author"],
+            "publisher": metadata.get("publisher"),
+            "publication_date": metadata.get("publication_date"),
+            "isbn": metadata.get("isbn"),
+            "language": metadata.get("language", "English"),
+            "description": metadata.get("description"),
+            "keywords": metadata.get("keywords", []),
+            "content_type": content_type.lower()
+        }
+        
+        # Remove None values
+        metadata_dict = {k: v for k, v in metadata_dict.items() if v is not None}
+        
+        data = {
+            'file_id': file_id,
+            'metadata_json': json.dumps(metadata_dict),
+            'content_type': content_type.lower()
+        }
+        
+        response = requests.post(f"{API_BASE_URL}/api/v1/conversion/convert", data=data)
+        
+        if response.status_code == 200:
+            return True, response.json(), None
+        else:
+            return False, None, f"Conversion failed: {response.text}"
+            
+    except requests.exceptions.ConnectionError:
+        return False, None, "Could not connect to backend server. Make sure it's running on http://localhost:8000"
+    except Exception as e:
+        return False, None, f"Conversion error: {str(e)}"
+
+def download_epub_file(download_url):
+    """Download EPUB file from backend API."""
+    try:
+        response = requests.get(f"{API_BASE_URL}{download_url}")
+        
+        if response.status_code == 200:
+            return True, response.content, None
+        else:
+            return False, None, f"Download failed: {response.text}"
+            
+    except requests.exceptions.ConnectionError:
+        return False, None, "Could not connect to backend server. Make sure it's running on http://localhost:8000"
+    except Exception as e:
+        return False, None, f"Download error: {str(e)}"
 
 def create_download_link(data, filename, text):
     """Create a download link for the generated file."""
@@ -256,6 +308,19 @@ def main():
         - Use ## for chapters
         - Use ### for displayed titles
         """)
+        
+        # Backend status check
+        st.markdown("---")
+        st.markdown("### Backend Status")
+        try:
+            response = requests.get(f"{API_BASE_URL}/health", timeout=2)
+            if response.status_code == 200:
+                st.success("✅ Backend Connected")
+            else:
+                st.error("❌ Backend Error")
+        except:
+            st.error("❌ Backend Offline")
+            st.info("Start the backend with: `cd backend && python run.py`")
 
     # Main layout: two columns (left and right)
     left_col, right_col = st.columns([1, 1])
@@ -278,7 +343,7 @@ def main():
                 ["English", "Spanish", "French", "German", "Italian"]
             )
             description = st.text_area("Description", help="Optional field (max 1000 characters)")
-            keywords = st.text_input("Keywords (comma-separated)", help="Optional field")
+            keywords_input = st.text_input("Keywords (comma-separated)", help="Optional field")
             
             # Form submission
             submitted = st.form_submit_button("Validate Form")
@@ -369,16 +434,56 @@ def main():
                 st.markdown('<div class="conversion-status">', unsafe_allow_html=True)
                 st.success("🔄 Starting conversion process...")
                 
-                # Simulate conversion process
-                if simulate_conversion_process():
-                    st.success("✅ Conversion completed successfully!")
+                # Step 1: Upload file to backend
+                with st.spinner("Uploading file to backend..."):
+                    success, result, error = upload_file_to_api(uploaded_file, cover_image)
                     
-                    # Create a sample EPUB file (in real implementation, this would be the actual converted file)
-                    sample_epub_content = b"Sample EPUB content"  # This would be the actual EPUB file
-                    filename = f"{title.replace(' ', '_') if title else 'book'}.epub"
+                    if not success:
+                        st.error(f"❌ {error}")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        return
+                    
+                    file_id = result['file_info']['file_id']
+                    st.success("✅ File uploaded to backend successfully!")
+                
+                # Step 2: Convert to EPUB
+                with st.spinner("Converting to EPUB..."):
+                    # Prepare metadata
+                    keywords = [k.strip() for k in keywords_input.split(',')] if keywords_input else []
+                    
+                    metadata = {
+                        "title": title,
+                        "author": author,
+                        "publisher": publisher if publisher else None,
+                        "publication_date": pub_date.isoformat() if pub_date else None,
+                        "isbn": isbn if isbn else None,
+                        "language": language,
+                        "description": description if description else None,
+                        "keywords": keywords
+                    }
+                    
+                    success, result, error = convert_file_to_epub(file_id, metadata, content_type)
+                    
+                    if not success:
+                        st.error(f"❌ {error}")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        return
+                    
+                    download_url = result.get('download_url')
+                    st.success("✅ Conversion completed successfully!")
+                
+                # Step 3: Download EPUB file
+                with st.spinner("Preparing download..."):
+                    success, epub_data, error = download_epub_file(download_url)
+                    
+                    if not success:
+                        st.error(f"❌ {error}")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        return
                     
                     # Create download link
-                    download_link = create_download_link(sample_epub_content, filename, "📥 Download EPUB")
+                    filename = f"{title.replace(' ', '_') if title else 'book'}.epub"
+                    download_link = create_download_link(epub_data, filename, "📥 Download EPUB")
                     st.markdown(download_link, unsafe_allow_html=True)
                     
                     st.info(f"📚 Your EPUB file '{filename}' is ready for download!")
