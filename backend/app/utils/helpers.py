@@ -15,7 +15,7 @@ ALLOWED_MIME_TYPES = {
     'text/plain': '.txt'
 }
 ALLOWED_IMAGE_FORMATS = ['JPEG', 'PNG']
-MIN_IMAGE_DIMENSIONS = (800, 1200)
+MIN_IMAGE_DIMENSIONS = (400, 600)  # Reduced minimum dimensions
 MAX_IMAGE_DIMENSIONS = (3000, 4000)
 
 def generate_file_id() -> str:
@@ -29,9 +29,10 @@ def validate_uploaded_file(file: UploadFile) -> Tuple[bool, Optional[str]]:
     
     # Check file size
     try:
-        file.seek(0, 2)  # Seek to end
-        file_size = file.tell()
-        file.seek(0)  # Reset to beginning
+        # Get file size by reading the entire file into memory
+        content = file.file.read()
+        file_size = len(content)
+        file.file.seek(0)  # Reset to beginning
         
         if file_size > MAX_FILE_SIZE:
             return False, f"File size exceeds {MAX_FILE_SIZE/1024/1024}MB limit"
@@ -40,7 +41,8 @@ def validate_uploaded_file(file: UploadFile) -> Tuple[bool, Optional[str]]:
     
     # Check file type
     try:
-        content = file.file.read(1024)  # Read first 1KB for MIME detection
+        # Read first 1KB for MIME detection
+        content = file.file.read(1024)
         file.file.seek(0)  # Reset to beginning
         
         mime = magic.Magic(mime=True)
@@ -60,9 +62,10 @@ def validate_cover_image(image_file: UploadFile) -> Tuple[bool, Optional[str], O
     
     # Check file size
     try:
-        image_file.seek(0, 2)
-        file_size = image_file.tell()
-        image_file.seek(0)
+        # Read the entire image content to get size
+        content = image_file.file.read()
+        file_size = len(content)
+        image_file.file.seek(0)  # Reset to beginning
         
         if file_size > MAX_IMAGE_SIZE:
             return False, f"Image size exceeds {MAX_IMAGE_SIZE/1024/1024}MB limit", None
@@ -70,9 +73,9 @@ def validate_cover_image(image_file: UploadFile) -> Tuple[bool, Optional[str], O
         return False, f"Error reading image file: {str(e)}", None
     
     try:
-        # Read image content
+        # Read image content again for processing
         content = image_file.file.read()
-        image_file.file.seek(0)
+        image_file.file.seek(0)  # Reset to beginning
         
         # Open image to check format and dimensions
         image = Image.open(io.BytesIO(content))

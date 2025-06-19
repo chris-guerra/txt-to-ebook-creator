@@ -4,6 +4,7 @@ from typing import Optional
 import json
 import os
 from pathlib import Path
+from pydantic import ValidationError
 
 from ..models.book import BookMetadata, ConversionRequest, ConversionResponse, ConversionStatus
 from ..converters.markdown_to_epub import MarkdownToEPUBConverter
@@ -62,14 +63,21 @@ async def upload_file(
         "filename": file.filename,
         "file_size": file.size,
         "file_path": file_path,
-        "cover_path": cover_path,
-        "cover_info": cover_image_info
+        "cover_path": cover_path
     }
-    
+    # Set initial status for status endpoint
+    conversion_status[file_id] = {
+        "status": "uploaded",
+        "progress": 0,
+        "message": "File uploaded and awaiting conversion",
+        "file_path": file_path,
+        "cover_path": cover_path
+    }
     return {
         "success": True,
         "message": "File uploaded successfully",
-        "file_info": file_info
+        "file_info": file_info,
+        "cover_info": cover_image_info
     }
 
 @router.post("/convert", response_model=ConversionResponse)
@@ -93,14 +101,21 @@ async def convert_to_epub(
     try:
         # Parse metadata
         metadata_dict = json.loads(metadata_json)
-        metadata = BookMetadata(**metadata_dict)
+        try:
+            metadata = BookMetadata(**metadata_dict)
+        except ValidationError as ve:
+            raise HTTPException(status_code=400, detail=f"Invalid metadata: {ve}")
         
         # Get file paths (in production, retrieve from database)
-        file_path = f"uploads/{file_id}.md"  # Simplified for demo
-        cover_path = f"uploads/covers/{file_id}_cover.jpg" if os.path.exists(f"uploads/covers/{file_id}_cover.jpg") else None
+        if file_id not in conversion_status:
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        status_info = conversion_status[file_id]
+        file_path = status_info.get("file_path")
+        cover_path = status_info.get("cover_path")
         
         # Validate file exists
-        if not os.path.exists(file_path):
+        if not file_path or not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Uploaded file not found")
         
         # Initialize converter
@@ -137,6 +152,8 @@ async def convert_to_epub(
             download_url=download_url
         )
         
+    except HTTPException as e:
+        raise e
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid metadata JSON format")
     except Exception as e:
@@ -214,6 +231,9 @@ async def delete_file(file_id: str):
         dict: Deletion status
     """
     try:
+        # Check if file_id exists
+        if file_id not in conversion_status:
+            raise HTTPException(status_code=404, detail="File not found")
         # Clean up files
         file_path = f"uploads/{file_id}.md"
         cover_path = f"uploads/covers/{file_id}_cover.jpg"
@@ -234,5 +254,7 @@ async def delete_file(file_id: str):
             "message": "Files deleted successfully"
         }
         
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting files: {str(e)}") 
