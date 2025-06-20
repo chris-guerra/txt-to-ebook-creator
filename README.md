@@ -1,51 +1,92 @@
 # Markdown to EPUB Creator / Creador de EPUB desde Markdown
 
+> **Project Context for AI Assistants**: This is a full-stack web application that converts Markdown files to EPUB format with full Kindle compatibility. It uses FastAPI (Python) for the backend API and Streamlit for the frontend interface. The project focuses on preserving Spanish accented characters, implementing Kindle metadata requirements, and providing comprehensive EPUB validation.
+
+## 📋 Table of Contents / Índice
+- [Project Overview](#project-overview)
+- [Architecture & Technology Stack](#architecture--technology-stack)
+- [Key Features](#key-features)
+- [Installation & Setup](#installation--setup)
+- [Usage Guide](#usage-guide)
+- [API Documentation](#api-documentation)
+- [Development & Testing](#development--testing)
+- [Kindle Compatibility](#kindle-compatibility)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+
+## 🎯 Project Overview
+
 A comprehensive tool for converting Markdown files to EPUB format with **full Kindle compatibility**. Features a FastAPI backend for robust file processing and a Streamlit frontend for an intuitive user experience.
 
-Una herramienta completa para convertir archivos Markdown a formato EPUB con **compatibilidad completa con Kindle**. Incluye un backend FastAPI para procesamiento robusto de archivos y un frontend Streamlit para una experiencia de usuario intuitiva.
+**Primary Goals:**
+- Convert Markdown/TXT files to Kindle-compatible EPUB format
+- Preserve Spanish accented characters (á, é, í, ó, ú, ñ, ü)
+- Implement all required Kindle metadata
+- Provide comprehensive validation and error handling
+- Support both prose and poetry content types
 
-## 🌟 Key Features / Características Principales
+## 🏗️ Architecture & Technology Stack
 
-### ✅ **Kindle Compatibility / Compatibilidad con Kindle**
-- **Full Kindle Metadata Support**: All required Kindle metadata fields
+### Backend (FastAPI)
+- **Framework**: FastAPI with Uvicorn ASGI server
+- **Core Libraries**: EbookLib, Markdown, Pillow (PIL), Python-magic
+- **File Processing**: Upload validation, EPUB generation, cover image processing
+- **API**: RESTful endpoints for file upload, conversion, and download
+
+### Frontend (Streamlit)
+- **Framework**: Streamlit for rapid web app development
+- **Features**: File upload, metadata forms, real-time validation, download links
+- **UI**: Responsive design with drag-and-drop functionality
+
+### Project Structure
+```
+txt-to-ebook-creator/
+├── backend/
+│   ├── app/
+│   │   ├── main.py              # FastAPI application entry point
+│   │   ├── models/              # Pydantic data models
+│   │   ├── routers/             # API route handlers
+│   │   ├── converters/          # Markdown to EPUB conversion logic
+│   │   └── utils/               # Helper functions and validation
+│   ├── tests/                   # Comprehensive test suite
+│   ├── requirements.txt         # Python dependencies
+│   └── run_tests.py            # Test runner script
+├── frontend/
+│   ├── app.py                   # Streamlit application
+│   └── requirements.txt         # Frontend dependencies
+└── README.md                    # This file
+```
+
+## 🌟 Key Features
+
+### ✅ **Kindle Compatibility**
+- **Full Kindle Metadata Support**: Title, author, identifier, language, TOC, spine
 - **EPUB 2.0 Format**: Optimized for Kindle compatibility
 - **Cover Image Processing**: Automatic RGB conversion and size optimization
 - **Safe Filenames**: Preserves accented characters while ensuring compatibility
-- **Navigation Structure**: Proper TOC and spine configuration
+- **Navigation Structure**: Proper NCX and NAV files for navigation
 - **Validation**: Comprehensive EPUB structure validation
 
-### 📚 **Content Processing / Procesamiento de Contenido**
+### 📚 **Content Processing**
 - **Markdown Support**: Full Markdown syntax with extensions
 - **Chapter Detection**: Automatic chapter and section parsing
 - **Content Types**: Support for prose and poetry formats
 - **Accented Characters**: Full support for Spanish and other languages
 - **HTML Sanitization**: Clean, Kindle-compatible HTML output
 
-### 🎨 **User Interface / Interfaz de Usuario**
+### 🎨 **User Interface**
 - **File Upload**: Drag-and-drop or file browser
-- **Metadata Form**: Complete book information input
+- **Metadata Form**: Complete book information input with validation
 - **Cover Image**: Optional cover image upload and processing
 - **Real-time Preview**: Live conversion status and progress
 - **Download**: Direct EPUB file download
 - **Validation Feedback**: Detailed EPUB structure information
 
-## 📋 Requirements / Requisitos
+## 🚀 Installation & Setup
 
-### Backend Requirements
+### Prerequisites
 - Python 3.8+
-- FastAPI
-- Uvicorn
-- EbookLib
-- Markdown
-- Pillow (PIL)
-- Python-magic
-
-### Frontend Requirements
-- Python 3.8+
-- Streamlit
-- Requests
-
-## 🚀 Installation / Instalación
+- Git
 
 ### 1. Clone the Repository
 ```bash
@@ -69,77 +110,130 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 🏃‍♂️ Running the Application / Ejecutar la Aplicación
+### 4. Start the Application
 
-### 1. Start the Backend
+#### Start Backend Server
 ```bash
 cd backend
 source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 2. Start the Frontend
+#### Start Frontend Application
 ```bash
 cd frontend
 source venv/bin/activate
 streamlit run app.py
 ```
 
-### 3. Access the Application
+#### Access Points
 - **Frontend**: http://localhost:8501
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
 
-## 📖 Usage / Uso
+## 📖 Usage Guide
 
 ### 1. Upload Your Markdown File
 - Drag and drop your `.md` or `.txt` file
 - Or use the file browser to select your file
-- Supported formats: Markdown (.md), Text (.txt)
+- **Supported formats**: Markdown (.md), Text (.txt)
+- **Maximum size**: 10MB
 
 ### 2. Add Book Metadata
-Fill in the required and optional book information:
 
-#### Required Fields / Campos Requeridos
-- **Title / Título** - Required for Kindle UI
-- **Author / Autor** - Required for Kindle UI  
-- **Language / Idioma** - Required, uses ISO 639-1 codes (e.g., "es", "en")
+#### Required Fields
+- **Title** - Required for Kindle UI (2-200 characters)
+- **Author** - Required for Kindle UI (2-100 characters)
+- **Language** - Required, uses ISO 639-1 codes (e.g., "es", "en")
 
-#### Optional Fields / Campos Opcionales
-- **Publisher / Editor**
-- **Publication Date / Fecha de Publicación** - ISO format (YYYY-MM-DD)
+#### Optional Fields
+- **Publisher** - Publisher name
+- **Publication Date** - ISO format (YYYY-MM-DD)
 - **ISBN** - Optional, UUID will be generated automatically if not provided
-- **Description / Descripción**
-- **Keywords / Palabras Clave**
+- **Description** - Book description (max 1000 characters)
+- **Keywords** - Comma-separated keywords
 
 ### 3. Upload Cover Image (Optional)
-- Supported formats: JPEG, PNG
-- Automatic processing for Kindle compatibility
-- Size optimization and RGB conversion
+- **Supported formats**: JPEG, PNG
+- **Maximum size**: 5MB
+- **Minimum dimensions**: 400x600 pixels
+- **Recommended dimensions**: 1600x2400 pixels
+- **Automatic processing**: RGB conversion and size optimization for Kindle
 
 ### 4. Convert and Download
 - Click "Convert to EPUB" to start the conversion
-- Monitor the conversion progress
+- Monitor the conversion progress and validation results
 - Download your EPUB file when ready
 
-## 🔧 API Endpoints / Endpoints de la API
+## 🔧 API Documentation
 
-### File Upload / Subida de Archivos
-- `POST /api/v1/conversion/upload` - Upload markdown file
+### Core Endpoints
 
-### Conversion / Conversión
-- `POST /api/v1/conversion/convert` - Convert to EPUB
-- `GET /api/v1/conversion/status/{file_id}` - Check conversion status
+#### File Upload
+```http
+POST /api/v1/conversion/upload
+Content-Type: multipart/form-data
 
-### Download / Descarga
-- `GET /api/v1/conversion/download/{file_id}` - Download EPUB file
+Parameters:
+- file: Markdown/TXT file (required)
+- cover_image: JPEG/PNG image (optional)
+```
 
-### File Management / Gestión de Archivos
-- `DELETE /api/v1/conversion/files/{file_id}` - Delete uploaded files
+#### Conversion
+```http
+POST /api/v1/conversion/convert
+Content-Type: application/x-www-form-urlencoded
 
-## 🧪 Testing / Pruebas
+Parameters:
+- file_id: Uploaded file ID (required)
+- metadata_json: JSON string with book metadata (required)
+- content_type: "prose" or "poetry" (required)
+```
 
-### Run All Tests
+#### Download
+```http
+GET /api/v1/conversion/download/{file_id}
+```
+
+#### Status Check
+```http
+GET /api/v1/conversion/status/{file_id}
+```
+
+#### File Management
+```http
+DELETE /api/v1/conversion/files/{file_id}
+```
+
+### Response Format
+```json
+{
+  "success": true,
+  "message": "Conversion completed successfully",
+  "download_url": "/api/v1/conversion/download/{file_id}",
+  "kindle_compatible": true,
+  "validation_issues": [],
+  "epub_info": {
+    "file_size_mb": 1.2,
+    "filename": "book.epub",
+    "has_cover": true,
+    "chapter_count": 5,
+    "total_files": 12,
+    "kindle_compatible": true,
+    "epub_structure": {
+      "has_container_xml": true,
+      "has_content_opf": true,
+      "opf_location": "EPUB/",
+      "has_ncx": true,
+      "has_nav": true
+    }
+  }
+}
+```
+
+## 🧪 Development & Testing
+
+### Running Tests
 ```bash
 cd backend
 python run_tests.py
@@ -147,54 +241,60 @@ python run_tests.py
 
 ### Individual Test Categories
 ```bash
-# Unit tests
+# Unit tests (helper functions)
 python -m pytest tests/test_helpers.py -v
 
-# API tests
+# API tests (endpoints)
 python -m pytest tests/test_api.py -v
 
 # Kindle compatibility tests
 python -m pytest tests/test_kindle_compatibility.py -v
 
-# Integration tests
+# Integration tests (complete workflow)
 python test_api.py
 ```
 
-## 📊 Kindle Compatibility Features / Características de Compatibilidad con Kindle
+### Test Coverage
+- **Unit Tests**: File validation, image processing, EPUB structure analysis
+- **API Tests**: All endpoints with various scenarios
+- **Integration Tests**: Complete conversion workflow
+- **Kindle Tests**: Metadata validation, EPUB structure, compatibility checks
 
-### Metadata Requirements / Requisitos de Metadatos
-The application ensures full Kindle compatibility by implementing all required metadata:
+## 📊 Kindle Compatibility
 
-#### Required Metadata / Metadatos Requeridos
+### Metadata Requirements
+The application implements all required Kindle metadata:
+
+#### Required Metadata
 - **Title**: Required for Kindle UI display
-- **Author**: Required for Kindle UI and library organization  
+- **Author**: Required for Kindle UI and library organization
 - **Identifier**: Automatically generated (ISBN if provided, otherwise UUID)
 - **Language**: Uses ISO 639-1 codes (e.g., "es", "en")
 - **TOC/Navigation**: Proper NCX and NAV files for navigation
 - **Spine**: Correct reading order with navigation first
 
-#### EPUB Structure Validation / Validación de Estructura EPUB
+#### EPUB Structure Validation
 - **Container.xml**: Required EPUB container file
 - **Content.opf**: Accepts multiple locations (root, OEBPS/, EPUB/)
 - **Navigation Files**: NCX and NAV for proper TOC
 - **File Structure**: Validates complete EPUB structure
 - **Size Limits**: Ensures Kindle-compatible file sizes
 
-### Content Processing / Procesamiento de Contenido
+### Content Processing
 - **HTML Sanitization**: Clean, Kindle-compatible HTML
 - **Accented Characters**: Preserves Spanish characters (á, é, í, ó, ú, ñ, ü)
 - **Safe Filenames**: Maintains compatibility while preserving characters
 - **Cover Processing**: Automatic RGB conversion and size optimization
 
-### Validation and Quality Assurance / Validación y Control de Calidad
+### Validation and Quality Assurance
 - **EPUB Structure**: Comprehensive structure validation
 - **Metadata Verification**: Ensures all required fields are present
 - **File Integrity**: Validates ZIP structure and file relationships
 - **Kindle Compatibility**: Specific checks for Kindle requirements
 
-## 🔍 Troubleshooting / Solución de Problemas
+## 🔍 Troubleshooting
 
-### Common Issues / Problemas Comunes
+### Common Issues
 
 #### File Upload Issues
 - **File too large**: Maximum file size is 10MB
@@ -211,7 +311,7 @@ The application ensures full Kindle compatibility by implementing all required m
 - **Cover not displaying**: Ensure cover image is properly formatted
 - **Navigation problems**: Verify TOC structure in your markdown
 
-### Validation Messages / Mensajes de Validación
+### Validation Messages
 
 #### ✅ Success Messages
 - "EPUB structure is valid"
@@ -228,9 +328,9 @@ The application ensures full Kindle compatibility by implementing all required m
 - "Invalid EPUB structure"
 - "Metadata validation failed"
 
-## 📝 File Format Requirements / Requisitos de Formato de Archivo
+## 📝 File Format Requirements
 
-### Markdown Structure / Estructura de Markdown
+### Markdown Structure
 ```markdown
 # Book Title
 
@@ -244,7 +344,7 @@ Subsection content...
 Content of chapter 2...
 ```
 
-### Supported Markdown Features / Características de Markdown Soportadas
+### Supported Markdown Features
 - **Headers**: # ## ### #### ##### ######
 - **Emphasis**: *italic*, **bold**, ***bold italic***
 - **Lists**: Ordered and unordered lists
@@ -254,26 +354,31 @@ Content of chapter 2...
 - **Blockquotes**: > quoted text
 - **Tables**: Markdown table syntax
 
-## 🤝 Contributing / Contribuir
+## 🤝 Contributing
 
+### Development Workflow
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch from `development`
 3. Make your changes
 4. Add tests for new functionality
-5. Run the test suite
-6. Submit a pull request
+5. Run the test suite: `python run_tests.py`
+6. Submit a pull request to `development`
 
-## 📄 License / Licencia
+### Code Standards
+- Follow PEP 8 for Python code
+- Add comprehensive tests for new features
+- Update documentation for API changes
+- Ensure Kindle compatibility is maintained
+
+### Testing Requirements
+- All new features must have corresponding tests
+- Maintain >90% test coverage
+- Run full test suite before submitting PR
+- Ensure all tests pass in CI/CD pipeline
+
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments / Agradecimientos
-
-- **EbookLib**: For EPUB generation capabilities
-- **FastAPI**: For the robust backend framework
-- **Streamlit**: For the intuitive frontend interface
-- **Markdown**: For content processing
-- **Pillow**: For image processing capabilities
 
 ---
 
