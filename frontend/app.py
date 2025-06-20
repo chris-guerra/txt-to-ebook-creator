@@ -336,11 +336,21 @@ def main():
             title = st.text_input("Title *", help="Required field (2-200 characters)")
             author = st.text_input("Author *", help="Required field (2-100 characters)")
             publisher = st.text_input("Publisher", help="Optional field")
-            pub_date = st.date_input("Publication Date")
-            isbn = st.text_input("ISBN", help="Optional: 10 or 13 digits")
+            pub_date = st.date_input("Publication Date", value=None, help="Optional: Publication date")
+            isbn = st.text_input("ISBN", help="Optional: 10 or 13 digits (UUID will be generated if not provided)")
             language = st.selectbox(
-                "Language",
-                ["English", "Spanish", "French", "German", "Italian"]
+                "Language *",
+                ["es", "en", "fr", "de", "it", "pt", "ca"],
+                format_func=lambda x: {
+                    "es": "Español",
+                    "en": "English", 
+                    "fr": "Français",
+                    "de": "Deutsch",
+                    "it": "Italiano",
+                    "pt": "Português",
+                    "ca": "Català"
+                }[x],
+                help="Required: Book language in ISO format"
             )
             description = st.text_area("Description", help="Optional field (max 1000 characters)")
             keywords_input = st.text_input("Keywords (comma-separated)", help="Optional field")
@@ -470,7 +480,51 @@ def main():
                         return
                     
                     download_url = result.get('download_url')
-                    st.success("✅ Conversion completed successfully!")
+                    
+                    # Display Kindle compatibility information
+                    kindle_compatible = result.get('kindle_compatible', False)
+                    validation_issues = result.get('validation_issues', [])
+                    epub_info = result.get('epub_info', {})
+                    
+                    if kindle_compatible:
+                        st.success("✅ Conversion completed successfully! EPUB is Kindle-compatible.")
+                    else:
+                        st.warning("⚠️ Conversion completed with warnings. EPUB may have compatibility issues.")
+                    
+                    # Display EPUB information
+                    if epub_info:
+                        st.info("📊 EPUB Information:")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.write(f"📄 File size: {epub_info.get('file_size_mb', 0):.2f} MB")
+                            st.write(f"📚 Chapters: {epub_info.get('chapter_count', 0)}")
+                            st.write(f"📁 Total files: {epub_info.get('total_files', 0)}")
+                        with col2:
+                            st.write(f"🖼️ Cover image: {'✅ Yes' if epub_info.get('has_cover', False) else '❌ No'}")
+                            st.write(f"📝 Filename: {epub_info.get('filename', 'Unknown')}")
+                            st.write(f"🔍 Kindle compatible: {'✅ Yes' if epub_info.get('kindle_compatible', False) else '❌ No'}")
+                        
+                        # Display EPUB structure details
+                        epub_structure = epub_info.get('epub_structure', {})
+                        if epub_structure:
+                            st.info("🏗️ EPUB Structure:")
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.write(f"📋 Container XML: {'✅' if epub_structure.get('has_container_xml') else '❌'}")
+                                st.write(f"📖 Content OPF: {'✅' if epub_structure.get('has_content_opf') else '❌'}")
+                                if epub_structure.get('opf_location'):
+                                    st.write(f"📍 OPF Location: {epub_structure['opf_location']}")
+                            with col2:
+                                st.write(f"📑 NCX Navigation: {'✅' if epub_structure.get('has_ncx') else '❌'}")
+                                st.write(f"🧭 NAV Navigation: {'✅' if epub_structure.get('has_nav') else '❌'}")
+                    
+                    # Display validation issues if any
+                    if validation_issues:
+                        st.warning("⚠️ Validation Issues:")
+                        for issue in validation_issues[:5]:  # Show first 5 issues
+                            st.write(f"• {issue}")
+                        if len(validation_issues) > 5:
+                            st.write(f"• ... and {len(validation_issues) - 5} more issues")
                 
                 # Step 3: Download EPUB file
                 with st.spinner("Preparing download..."):

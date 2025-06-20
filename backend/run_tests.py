@@ -80,14 +80,14 @@ def run_api_tests():
 def run_integration_tests():
     """Run integration tests."""
     return run_command(
-        [sys.executable, '-m', 'pytest', 'test_api.py', '-v'],
+        [sys.executable, 'test_api.py'],
         "Integration Tests (Complete Workflow)"
     )
 
 def run_all_tests():
     """Run all tests with coverage."""
     return run_command(
-        [sys.executable, '-m', 'pytest', 'tests/', 'test_api.py', '-v', '--tb=short'],
+        [sys.executable, '-m', 'pytest', 'tests/', '-v', '--tb=short'],
         "All Tests"
     )
 

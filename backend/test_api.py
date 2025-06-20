@@ -99,7 +99,7 @@ def test_conversion(file_id):
         "title": "My Test Book",
         "author": "Test Author",
         "publisher": "Test Publisher",
-        "language": "English",
+        "language": "en",
         "description": "A test book for API validation",
         "keywords": ["test", "markdown", "epub"],
         "content_type": "prose"

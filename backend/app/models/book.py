@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import date
 from enum import Enum
+import uuid
 
 class ContentType(str, Enum):
     """Content type enumeration."""
@@ -9,13 +10,13 @@ class ContentType(str, Enum):
     POETRY = "poetry"
 
 class BookMetadata(BaseModel):
-    """Book metadata model."""
+    """Book metadata model with Kindle compatibility."""
     title: str = Field(..., min_length=2, max_length=200, description="Book title")
     author: str = Field(..., min_length=2, max_length=100, description="Book author")
     publisher: Optional[str] = Field(None, max_length=100, description="Publisher name")
-    publication_date: Optional[date] = Field(None, description="Publication date")
-    isbn: Optional[str] = Field(None, description="ISBN number")
-    language: str = Field(default="English", description="Book language")
+    publication_date: Optional[date] = Field(None, description="Publication date in YYYY-MM-DD format")
+    isbn: Optional[str] = Field(None, description="ISBN number (optional, UUID will be generated if not provided)")
+    language: str = Field(default="es", description="Book language in ISO 639-1 format (e.g., 'es', 'en')")
     description: Optional[str] = Field(None, max_length=1000, description="Book description")
     keywords: Optional[List[str]] = Field(None, description="Keywords for the book")
     content_type: ContentType = Field(default=ContentType.PROSE, description="Content type")
@@ -43,6 +44,19 @@ class BookMetadata(BaseModel):
         
         return v
 
+    @validator('language')
+    def validate_language(cls, v):
+        """Validate language code format."""
+        if not v or len(v) != 2:
+            raise ValueError("Language must be a 2-character ISO 639-1 code (e.g., 'es', 'en')")
+        return v.lower()
+
+    def get_identifier(self) -> str:
+        """Get identifier for EPUB (ISBN if provided, otherwise UUID)."""
+        if self.isbn:
+            return self.isbn
+        return str(uuid.uuid4())
+
 class ConversionRequest(BaseModel):
     """Conversion request model."""
     metadata: BookMetadata
@@ -55,6 +69,9 @@ class ConversionResponse(BaseModel):
     file_id: Optional[str] = None
     download_url: Optional[str] = None
     error: Optional[str] = None
+    kindle_compatible: Optional[bool] = None
+    validation_issues: Optional[List[str]] = None
+    epub_info: Optional[Dict[str, Any]] = None
 
 class FileInfo(BaseModel):
     """File information model."""
@@ -68,4 +85,7 @@ class ConversionStatus(BaseModel):
     status: str  # "pending", "processing", "completed", "failed"
     progress: int = Field(0, ge=0, le=100)
     message: str
-    file_id: Optional[str] = None 
+    file_id: Optional[str] = None
+    kindle_compatible: Optional[bool] = None
+    validation_issues: Optional[List[str]] = None
+    epub_info: Optional[Dict[str, Any]] = None 

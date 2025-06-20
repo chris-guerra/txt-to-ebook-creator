@@ -14,7 +14,9 @@ from ..utils.helpers import (
     save_uploaded_file, 
     save_cover_image,
     generate_file_id,
-    cleanup_file
+    cleanup_file,
+    validate_epub_for_kindle,
+    get_epub_info
 )
 
 router = APIRouter()
@@ -88,7 +90,7 @@ async def convert_to_epub(
     content_type: str = Form(default="prose")
 ):
     """
-    Convert uploaded file to EPUB format.
+    Convert uploaded file to EPUB format with Kindle compatibility validation.
     
     Args:
         file_id: Unique identifier for the uploaded file
@@ -128,16 +130,33 @@ async def convert_to_epub(
             cover_image_path=cover_path
         )
         
+        # Validate EPUB for Kindle compatibility
+        is_kindle_compatible, validation_issues = validate_epub_for_kindle(epub_path)
+        
+        # Get detailed EPUB information
+        epub_info = get_epub_info(epub_path)
+        
         # Generate download URL
         download_url = f"/api/v1/conversion/download/{file_id}"
         
-        # Store conversion status
+        # Prepare response message
+        if is_kindle_compatible:
+            message = "Conversion completed successfully. EPUB is Kindle-compatible."
+        else:
+            message = f"Conversion completed with warnings: {', '.join(validation_issues[:3])}"
+            if len(validation_issues) > 3:
+                message += f" and {len(validation_issues) - 3} more issues"
+        
+        # Store conversion status with validation info
         conversion_status[file_id] = {
             "status": "completed",
             "progress": 100,
-            "message": "Conversion completed successfully",
+            "message": message,
             "epub_path": epub_path,
-            "download_url": download_url
+            "download_url": download_url,
+            "kindle_compatible": is_kindle_compatible,
+            "validation_issues": validation_issues,
+            "epub_info": epub_info
         }
         
         # Schedule cleanup of temporary files
@@ -147,9 +166,12 @@ async def convert_to_epub(
         
         return ConversionResponse(
             success=True,
-            message="Conversion completed successfully",
+            message=message,
             file_id=file_id,
-            download_url=download_url
+            download_url=download_url,
+            kindle_compatible=is_kindle_compatible,
+            validation_issues=validation_issues,
+            epub_info=epub_info
         )
         
     except HTTPException as e:
@@ -175,7 +197,7 @@ async def get_conversion_status(file_id: str):
         file_id: Unique identifier for the file
     
     Returns:
-        ConversionStatus: Current conversion status
+        ConversionStatus: Current conversion status with Kindle compatibility info
     """
     if file_id not in conversion_status:
         raise HTTPException(status_code=404, detail="File not found")
@@ -185,7 +207,10 @@ async def get_conversion_status(file_id: str):
         status=status["status"],
         progress=status.get("progress", 0),
         message=status["message"],
-        file_id=file_id
+        file_id=file_id,
+        kindle_compatible=status.get("kindle_compatible"),
+        validation_issues=status.get("validation_issues"),
+        epub_info=status.get("epub_info")
     )
 
 @router.get("/download/{file_id}")

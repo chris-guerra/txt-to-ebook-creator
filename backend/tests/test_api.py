@@ -182,7 +182,7 @@ Suggestions for further reading and exploration.
             "title": "My Test Book",
             "author": "Test Author",
             "publisher": "Test Publisher",
-            "language": "English",
+            "language": "en",
             "description": "A test book for API validation",
             "keywords": ["test", "markdown", "epub"],
             "content_type": "prose"
@@ -212,7 +212,7 @@ Suggestions for further reading and exploration.
         metadata = {
             "title": "My Poetry Book",
             "author": "Test Poet",
-            "language": "English",
+            "language": "en",
             "content_type": "poetry"
         }
         
