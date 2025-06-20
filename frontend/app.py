@@ -511,9 +511,9 @@ def main():
                             col1, col2 = st.columns(2)
                             with col1:
                                 st.write(f"📋 Container XML: {'✅' if epub_structure.get('has_container_xml') else '❌'}")
-                                st.write(f"📖 Content OPF: {'✅' if epub_structure.get('has_content_opf') else '❌'}")
-                                if epub_structure.get('opf_location'):
-                                    st.write(f"📍 OPF Location: {epub_structure['opf_location']}")
+                                opf_status = '✅' if epub_structure.get('has_content_opf') else '❌'
+                                opf_location = epub_structure.get('opf_location', 'Not found')
+                                st.write(f"📖 Content OPF: {opf_status} ({opf_location})")
                             with col2:
                                 st.write(f"📑 NCX Navigation: {'✅' if epub_structure.get('has_ncx') else '❌'}")
                                 st.write(f"🧭 NAV Navigation: {'✅' if epub_structure.get('has_nav') else '❌'}")

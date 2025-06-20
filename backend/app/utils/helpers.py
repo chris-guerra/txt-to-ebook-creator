@@ -357,6 +357,9 @@ def get_epub_info(epub_path: str) -> Dict[str, Any]:
                 elif 'content.opf' in file_list:
                     info['epub_structure']['has_content_opf'] = True
                     info['epub_structure']['opf_location'] = 'root'
+                elif 'EPUB/content.opf' in file_list:
+                    info['epub_structure']['has_content_opf'] = True
+                    info['epub_structure']['opf_location'] = 'EPUB/'
                 
                 # Check for navigation files
                 info['epub_structure']['has_ncx'] = any('toc.ncx' in f.lower() for f in file_list)
