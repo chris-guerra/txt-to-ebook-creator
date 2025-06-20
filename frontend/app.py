@@ -25,7 +25,7 @@ ALLOWED_MIME_TYPES = {
 # Image validation constants
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_IMAGE_FORMATS = ['JPEG', 'PNG']
-MIN_IMAGE_DIMENSIONS = (800, 1200)  # Minimum width, height
+MIN_IMAGE_DIMENSIONS = (400, 600)  # Reduced minimum dimensions
 RECOMMENDED_IMAGE_DIMENSIONS = (1600, 2400)  # Recommended width, height
 MAX_IMAGE_DIMENSIONS = (3000, 4000)  # Maximum width, height
 
